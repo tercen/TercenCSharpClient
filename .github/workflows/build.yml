@@ -11,7 +11,7 @@ on:
 
 # Environment variables
 env:
-  DOTNET_VERSION: '8.0.x'  # Specify your .NET version (e.g., 8.0, 9.0)
+  DOTNET_VERSION: '9.0.x'  # Specify your .NET version (e.g., 8.0, 9.0)
 
 jobs:
   build-and-test:
@@ -26,6 +26,9 @@ jobs:
 
       - name: Start tercen instance
         uses: tercen/actions/start-tercen@main
+        with:
+          branch: dev
+          sarno-tag: dev
 
       # Set up the .NET SDK
       - name: Setup .NET

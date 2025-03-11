@@ -5,9 +5,6 @@ cd TercenGrpcClient/tercen_grpc_api
 git pull origin main
 ```
 
-https://learn.microsoft.com/en-us/aspnet/core/tutorials/grpc/grpc-start?view=aspnetcore-9.0&tabs=visual-studio
-
-
 ```shell
 Install-Package Grpc.Net.Client
 Install-Package Google.Protobuf
@@ -16,8 +13,7 @@ Install-Package Grpc.Tools
 dotnet sln add ../TercenGrpcClient/TercenGrpcClient.csproj
 dotnet add ./TercenGrpcClient.Test/TercenGrpcClient.Test.csproj reference ./TercenGrpcClient/TercenGrpcClient.csproj  
 ```
-
-
+ 
 ```protobuf
 option csharp_namespace = "TercenGrpcClient";
 ```
@@ -31,3 +27,7 @@ Add an item group with a <Protobuf> element that refers to the tercen.proto file
 </ItemGroup>
 ```
 
+
+```shell
+dotnet test --no-restore --verbosity normal
+```
