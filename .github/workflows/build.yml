@@ -1,0 +1,57 @@
+name: CI for C# gRPC Project
+
+# Trigger the workflow on push or pull request to the main branch
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Environment variables
+env:
+  DOTNET_VERSION: '8.0.x'  # Specify your .NET version (e.g., 8.0, 9.0)
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest  # You can also use windows-latest or macos-latest if needed
+
+    steps:
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Start tercen instance
+        uses: tercen/actions/start-tercen@main
+
+      # Set up the .NET SDK
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      
+      # Restore dependencies (including NuGet packages like Grpc.Tools)
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # Build the project in Release configuration
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      # Run tests (if you have any test projects)
+      - name: Test
+        run: dotnet test --no-restore --verbosity normal
+
+      # Optional: Publish the project output (e.g., for a gRPC server)
+#      - name: Publish
+#        run: dotnet publish --configuration Release --output ./publish
+#
+#      # Optional: Upload the published artifacts
+#      - name: Upload artifacts
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: grpc-app
+#          path: ./publish/

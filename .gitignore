@@ -1,0 +1,56 @@
+.idea
+# Visual Studio files
+*.csproj.user
+*.suo
+*.user
+*.sln.docstates
+*.vs/
+.vscode/
+.vs/
+
+# Build output
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+*.exe
+*.dll
+*.pdb
+*.cache
+
+# NuGet Packages
+*.nupkg
+packages/
+**/Packages/
+!**/packages/build/
+
+# Test results
+*.trx
+TestResults/
+
+# Logs
+*.log
+logs/
+
+# Dependency directories
+node_modules/
+
+# Miscellaneous
+*.bak
+*.tmp
+*.swp
+Thumbs.db
+.DS_Store
+
+# Rider IDE (JetBrains)
+.idea/
+
+# Azure and other deployment files
+*.publishsettings
+*.pubxml
+*.pubxml.user
+
+# User-specific files
+*.suo
+*.user
+*.sln.docstates
