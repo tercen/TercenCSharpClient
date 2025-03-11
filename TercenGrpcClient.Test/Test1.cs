@@ -167,8 +167,13 @@ public sealed class Test1
     [TestInitialize]
     public async System.Threading.Tasks.Task SetupAsync()
     {
+        string? uri = Environment.GetEnvironmentVariable("TERCEN_URI");
+        if (string.IsNullOrEmpty(uri))
+        {
+            uri = "http://127.0.0.1:50051";
+        }
         _factory = await TercenFactory.Create(
-            "http://127.0.0.1:50051",
+            uri,
             "",
             "admin",
             "admin");

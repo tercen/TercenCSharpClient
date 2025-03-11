@@ -47,6 +47,8 @@ jobs:
       # Run tests (if you have any test projects)
       - name: Test
         run: dotnet test --no-restore --verbosity normal
+        env:
+          TERCEN_URI: http://172.42.0.42:50051
 
       # Optional: Publish the project output (e.g., for a gRPC server)
 #      - name: Publish
