@@ -187,14 +187,6 @@ public sealed class Test1
         Assert.AreEqual("test@tercen.com", getResponse.User.Email);
     }
 
-    [TestMethod]
-    public async System.Threading.Tasks.Task TestTeamGet()
-    {
-        var getResponse = await _factory.TeamService().getAsync(new GetRequest { Id = "tercen" });
-        Assert.AreEqual("tercen", getResponse.Team.Name);
-        Assert.AreEqual("admin", getResponse.Team.Acl.Owner);
-    }
-
     private async Task<Team> GetOrCreateTeam(string teamName)
     {
         try
@@ -229,6 +221,10 @@ public sealed class Test1
         const string teamName = "test_csharp_team";
 
         var team = await GetOrCreateTeam(teamName);
+        
+        var getResponse = await _factory.TeamService().getAsync(new GetRequest { Id = team.Id});
+        Assert.AreEqual(teamName, getResponse.Team.Name);
+        Assert.AreEqual("admin", getResponse.Team.Acl.Owner);
 
         Assert.AreEqual(teamName, team.Id);
         Assert.IsNotNull(team.Rev);
