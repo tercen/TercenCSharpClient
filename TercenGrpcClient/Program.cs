@@ -1,17 +1,27 @@
 ﻿using Grpc.Net.Client;
+using TercenGrpcClient;
 
-// The port number must match the port of the gRPC server.
-using var channel = GrpcChannel.ForAddress("http://127.0.0.1:50051");
+namespace MyApp
+{
+    class Program
+    {
+        static async Task Main(string[] args)
+        {
+            Console.WriteLine("Hello, Tercen!");
+            
+            using var channel = GrpcChannel.ForAddress("http://127.0.0.1:50051");
 
-var client = new TercenGrpcClient.UserService.UserServiceClient(channel);
+            var client = new UserService.UserServiceClient(channel);
 
-var connectReq = new TercenGrpcClient.ReqConnect2();
-connectReq.Domain = "";
-connectReq.UsernameOrEmail = "admin";
-connectReq.Password = "admin";
+            var replyConnect2 = await client.connect2Async(
+                new ReqConnect2
+                {
+                    Domain = "",
+                    UsernameOrEmail = "admin",
+                    Password = "admin",
+                });
 
-var replyConnect2 = await client.connect2Async(connectReq);
-
- 
-Console.WriteLine("Tercen Session : " + replyConnect2.Result);
- 
+            Console.WriteLine("Tercen Session : " + replyConnect2.Result);
+        }
+    }
+}

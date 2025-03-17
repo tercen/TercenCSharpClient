@@ -54,3 +54,6 @@ Thumbs.db
 *.suo
 *.user
 *.sln.docstates
+
+prompt.txt
+playground.md

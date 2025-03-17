@@ -7,7 +7,6 @@ namespace TercenGrpcClient.Test;
 using Grpc.Net.Client;
 using System.Net.Http;
 
-// using TercenGrpcClient;
 using Tercen;
 
 // Custom handler to add authentication token
