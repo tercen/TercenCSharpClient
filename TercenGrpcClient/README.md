@@ -35,6 +35,10 @@ Once Tercen Studio is installed and running, run the following
 
 ```bash
 # export TERCEN_URI="http://127.0.0.1:50051"
+# export TERCEN_USERNAME=admin
+# export TERCEN_PASSWORD=admin
+# export TERCEN_TENANT="tercen:"
+
 dotnet test --no-restore --verbosity normal
 ```
 

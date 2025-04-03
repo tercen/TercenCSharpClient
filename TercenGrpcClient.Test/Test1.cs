@@ -8,20 +8,41 @@ using Tercen;
 public sealed class Test1
 {
     private TercenFactory _factory;
+    private string? uri;
+    private string? tenant;
+    private string? username;
+    private string? password;
 
     [TestInitialize]
     public async System.Threading.Tasks.Task SetupAsync()
     {
-        string? uri = Environment.GetEnvironmentVariable("TERCEN_URI");
+        uri = Environment.GetEnvironmentVariable("TERCEN_URI");
+        tenant = Environment.GetEnvironmentVariable("TERCEN_TENANT");
+        username = Environment.GetEnvironmentVariable("TERCEN_USERNAME");
+        password = Environment.GetEnvironmentVariable("TERCEN_PASSWORD");
+        
         if (string.IsNullOrEmpty(uri))
         {
             uri = "http://127.0.0.1:50051";
         }
+        if (string.IsNullOrEmpty(username))
+        {
+            username = "admin";
+        }
+        if (string.IsNullOrEmpty(password))
+        {
+            password = "admin";
+        }
+        if (string.IsNullOrEmpty(tenant))
+        {
+            tenant = "";
+        }
+        
         _factory = await TercenFactory.Create(
             uri,
-            "",
-            "admin",
-            "admin");
+            tenant,
+            username,
+            password);
     }
 
     [TestMethod]
@@ -69,12 +90,12 @@ public sealed class Test1
         
         var getResponse = await _factory.TeamService().getAsync(new GetRequest { Id = team.Id});
         Assert.AreEqual(teamName, getResponse.Team.Name);
-        Assert.AreEqual("admin", getResponse.Team.Acl.Owner);
+        Assert.AreEqual(username, getResponse.Team.Acl.Owner);
 
         Assert.AreEqual(teamName, team.Id);
         Assert.IsNotNull(team.Rev);
         Assert.AreEqual(teamName, team.Name);
-        Assert.AreEqual("admin", team.Acl.Owner);
+        Assert.AreEqual(username, team.Acl.Owner);
 
         await _factory.TeamService().deleteAsync(new DeleteRequest { Id = team.Id, Rev = team.Rev });
     }
