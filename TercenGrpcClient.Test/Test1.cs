@@ -4,6 +4,7 @@ using System.Text;
 using Grpc.Core;
 using Tercen;
  
+[DoNotParallelize]
 [TestClass]
 public sealed class Test1
 {

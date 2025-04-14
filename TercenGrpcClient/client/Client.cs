@@ -146,9 +146,36 @@ public class TercenFactory
     {
         return new ProjectService.ProjectServiceClient(_channel);
     }
+    
+    
 
     public FileService.FileServiceClient FileService()
     {
         return new FileService.FileServiceClient(_channel);
+    }
+    
+    public DocumentService.DocumentServiceClient DocumentService()
+    {
+        return new DocumentService.DocumentServiceClient(_channel);
+    }
+    
+    public TableSchemaService.TableSchemaServiceClient TableSchemaService()
+    {
+        return new TableSchemaService.TableSchemaServiceClient(_channel);
+    }
+    
+    public ProjectDocumentService.ProjectDocumentServiceClient ProjectDocumentService()
+    {
+        return new ProjectDocumentService.ProjectDocumentServiceClient(_channel);
+    }
+    
+    public TaskService.TaskServiceClient TaskService()
+    {
+        return new TaskService.TaskServiceClient(_channel);
+    }
+    
+    public  WorkflowService.WorkflowServiceClient WorkflowService()
+    {
+        return new WorkflowService.WorkflowServiceClient(_channel);
     }
 }
