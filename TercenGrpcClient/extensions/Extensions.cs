@@ -135,13 +135,12 @@ public static class ERelationExtension
         };
         return fileDocumentRelation;
     }
-
-    
 }
 
 public static class FileServiceExtension
 {
-    public static async Task<FileDocument> UploadFile(this FileService.FileServiceClient fileService, string filePath, FileDocument fileDocument)
+    public static async Task<FileDocument> UploadFile(this FileService.FileServiceClient fileService, string filePath,
+        FileDocument fileDocument)
     {
         const int chunkSize = 1024 * 1024;
         using var uploadCall = fileService.upload();
@@ -184,18 +183,19 @@ public static class TercenFactoryExtension
 {
     public static async Task<Project> GetOrCreateProject(this TercenFactory factory, string projectName, string teamId)
     {
-        return await factory.DocumentService().FindProjectByOwnerAndName(teamId, projectName) ?? (await factory.ProjectService().createAsync(new EProject()
-        {
-            Project = new Project()
+        return await factory.DocumentService().FindProjectByOwnerAndName(teamId, projectName) ?? (await factory
+            .ProjectService().createAsync(new EProject()
             {
-                Name = projectName,
-                IsPublic = false,
-                Acl = new Acl()
+                Project = new Project()
                 {
-                    Owner = teamId,
+                    Name = projectName,
+                    IsPublic = false,
+                    Acl = new Acl()
+                    {
+                        Owner = teamId,
+                    }
                 }
-            }
-        })).Project;
+            })).Project;
     }
 }
 
@@ -258,7 +258,7 @@ public static class TableSchemaServiceExtension
                         BooleanArray boolArray => boolArray.GetValue(row),
                         _ => null
                     };
-                    
+
                     rowData[fieldName] = value;
                 }
 
@@ -476,8 +476,8 @@ public static class TeamServiceExtension
 
         return team.Team;
     }
-    
-    
+
+
     public static async Task<Team> GetOrCreateTestLibraryTeam(
         this TeamService.TeamServiceClient teamService, string teamName)
 
@@ -516,8 +516,6 @@ public static class TeamServiceExtension
 
         return team.Team;
     }
-    
-    
 }
 
 public static class DocumentServiceExtension
@@ -542,13 +540,13 @@ public static class DocumentServiceExtension
     public static async Task<List<Project>> FindProjectsByOwner(
         this DocumentService.DocumentServiceClient documentService, string teamOrUserId)
     {
-        var request = new KeyRangeRequest { Name = "Project/findProjectByOwnersAndCreatedDate" };
-//Project/findProjectByOwnersAndName
+        var request = new KeyRangeRequest { Name = "Project/findProjectByOwnersAndName" };
+
         request.StartKeys.Add(new IndexKeyValue { IndexField = "acl.owner", StringValue = teamOrUserId });
-        request.StartKeys.Add(new IndexKeyValue { IndexField = "createdDate.value", StringValue = "2100" });
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "name", StringValue = "\ufff0" });
 
         request.EndKeys.Add(new IndexKeyValue { IndexField = "acl.owner", StringValue = teamOrUserId });
-        request.EndKeys.Add(new IndexKeyValue { IndexField = "createdDate.value", StringValue = "" });
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "name", StringValue = "" });
 
         request.UseFactory = true;
         request.Limit = 10000000;
@@ -570,7 +568,9 @@ public static class DocumentServiceExtension
         request.UseFactory = true;
         request.Limit = 1;
 
-        return (await documentService.findKeyRangeAsync(request)).List.Select(doc => doc.Project).ToList().FirstOrDefault();
+        return (await documentService.findKeyRangeAsync(request)).List.Select(doc => doc.Project)
+            .ToList()
+            .FirstOrDefault();
     }
 }
 
