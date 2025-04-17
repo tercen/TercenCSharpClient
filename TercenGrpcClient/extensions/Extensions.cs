@@ -530,10 +530,11 @@ public static class DocumentServiceExtension
             .getLibraryAsync(new ReqGetLibrary { DocTypes = { "Workflow" } });
 
         var templates = response.List.Where(doc => doc.Projectdocument != null).Where(doc =>
-            doc.Projectdocument.Url.Uri == templateGitUri &&
-            doc.Projectdocument.Version == version).ToList();
+                doc.Projectdocument.Url.Uri == templateGitUri &&
+                doc.Projectdocument.Version == version)
+            .Select(doc => doc.Projectdocument).ToList();
 
-        return templates.Count > 0 ? templates.First().Projectdocument : null;
+        return templates.FirstOrDefault();
     }
 
 
