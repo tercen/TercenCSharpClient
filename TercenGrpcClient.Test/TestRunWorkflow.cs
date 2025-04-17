@@ -70,8 +70,8 @@ public sealed class TestRunWorkflow
     [TestCleanup]
     public async System.Threading.Tasks.Task TeardownAsync()
     {
-        var teamLibrary = await _factory.TeamService().GetOrCreateTestLibraryTeam(TestLibraryTeamId);
-        await _factory.TeamService().deleteAsync(new DeleteRequest { Id = teamLibrary.Id, Rev = teamLibrary.Rev });
+        // var teamLibrary = await _factory.TeamService().GetOrCreateTestLibraryTeam(TestLibraryTeamId);
+        // await _factory.TeamService().deleteAsync(new DeleteRequest { Id = teamLibrary.Id, Rev = teamLibrary.Rev });
         var team = await _factory.TeamService().GetOrCreateTestLibraryTeam(TestRunWorkflowTeamId);
         await _factory.TeamService().deleteAsync(new DeleteRequest { Id = team.Id, Rev = team.Rev });
     }
