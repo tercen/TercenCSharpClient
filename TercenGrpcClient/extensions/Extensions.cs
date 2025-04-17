@@ -145,7 +145,6 @@ public static class FileServiceExtension
     {
         const int chunkSize = 1024 * 1024;
         using var uploadCall = fileService.upload();
-        // await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
         var buffer = new byte[chunkSize];
         int bytesRead;
         var firstChunk = true;
