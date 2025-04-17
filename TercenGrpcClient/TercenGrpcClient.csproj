@@ -9,17 +9,19 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Apache.Arrow" Version="19.0.1" />
       <PackageReference Include="Google.Protobuf" Version="3.30.0-rc2" />
       <PackageReference Include="Grpc.Net.Client" Version="2.70.0-pre1" />
       <PackageReference Include="Grpc.Tools" Version="2.70.0">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
+      <PackageReference Include="Microsoft.Data.Analysis" Version="0.22.2" />
     </ItemGroup>
     
     <ItemGroup>
       <Protobuf Include="tercen_grpc_api\protos\tercen_model.proto" GrpcServices="Client" />
-      <Protobuf Include="tercen_grpc_api\protos\tercen.proto" GrpcServices="Client" ProtoRoot="tercen_grpc_api\protos\"/>
+      <Protobuf Include="tercen_grpc_api\protos\tercen.proto" GrpcServices="Client" ProtoRoot="tercen_grpc_api\protos\" />
     </ItemGroup>
 
 </Project>

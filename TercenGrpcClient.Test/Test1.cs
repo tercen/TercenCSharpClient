@@ -1,9 +1,12 @@
-﻿namespace TercenGrpcClient.Test;
+﻿using TercenGrpcClient.extensions;
+
+namespace TercenGrpcClient.Test;
 
 using System.Text;
 using Grpc.Core;
 using Tercen;
- 
+using TercenGrpcClient.client;
+
 [DoNotParallelize]
 [TestClass]
 public sealed class Test1
@@ -21,24 +24,27 @@ public sealed class Test1
         tenant = Environment.GetEnvironmentVariable("TERCEN_TENANT");
         username = Environment.GetEnvironmentVariable("TERCEN_USERNAME");
         password = Environment.GetEnvironmentVariable("TERCEN_PASSWORD");
-        
+
         if (string.IsNullOrEmpty(uri))
         {
             uri = "http://127.0.0.1:50051";
         }
+
         if (string.IsNullOrEmpty(username))
         {
             username = "admin";
         }
+
         if (string.IsNullOrEmpty(password))
         {
             password = "admin";
         }
+
         if (string.IsNullOrEmpty(tenant))
         {
             tenant = "";
         }
-        
+
         _factory = await TercenFactory.Create(
             uri,
             tenant,
@@ -54,42 +60,15 @@ public sealed class Test1
         Assert.AreEqual("test@tercen.com", getResponse.User.Email);
     }
 
-    private async Task<Team> GetOrCreateTeam(string teamName)
-    {
-        try
-        {
-            var teamResponse = await _factory.TeamService().getAsync(new GetRequest { Id = teamName });
-            return teamResponse.Team;
-        }
-        catch (RpcException e)
-        {
-            if (!new TercenException(e).IsNotFound())
-            {
-                throw;
-            }
-        }
-
-        var team = new ETeam
-        {
-            Team = new Team
-            {
-                Name = teamName,
-            }
-        };
-
-        team = await _factory.TeamService().createAsync(team);
-
-        return team.Team;
-    }
 
     [TestMethod]
     public async System.Threading.Tasks.Task TestTeamCreateUpdateDelete()
     {
         const string teamName = "test_csharp_team";
 
-        var team = await GetOrCreateTeam(teamName);
-        
-        var getResponse = await _factory.TeamService().getAsync(new GetRequest { Id = team.Id});
+        var team = await _factory.TeamService().GetOrCreateTeam(teamName);
+
+        var getResponse = await _factory.TeamService().getAsync(new GetRequest { Id = team.Id });
         Assert.AreEqual(teamName, getResponse.Team.Name);
         Assert.AreEqual(username, getResponse.Team.Acl.Owner);
 
@@ -107,7 +86,7 @@ public sealed class Test1
         const string teamName = "test_csharp_team";
         const string projectName = "test_csharp_project";
 
-        var team = await GetOrCreateTeam(teamName);
+        var team = await _factory.TeamService().GetOrCreateTeam(teamName);
 
         var project = new EProject()
         {
@@ -149,9 +128,9 @@ public sealed class Test1
         const string projectName1 = "test_csharp_project_1";
         const string projectName2 = "test_csharp_project_2";
 
-        var team = await GetOrCreateTeam(teamName);
+        var team = await _factory.TeamService().GetOrCreateTeam(teamName);
         await _factory.TeamService().deleteAsync(new DeleteRequest { Id = team.Id, Rev = team.Rev });
-        team = await GetOrCreateTeam(teamName);
+        team = await _factory.TeamService().GetOrCreateTeam(teamName);
 
         await _factory.ProjectService().createAsync(new EProject()
         {
@@ -178,41 +157,22 @@ public sealed class Test1
             }
         });
 
-        var request = new KeyRangeRequest { Name = "Project/findByTeamAndIsPublicAndLastModifiedDate" };
 
-        request.StartKeys.Add(new IndexKeyValue { IndexField = "acl.owner", StringValue = team.Id });
-        request.StartKeys.Add(new IndexKeyValue { IndexField = "isPublic", BoolValue = true });
-        request.StartKeys.Add(new IndexKeyValue { IndexField = "lastModifiedDate.value", StringValue = "2100" });
+        var projects = await _factory.DocumentService().FindProjectsByOwner(team.Id);
 
-        request.EndKeys.Add(new IndexKeyValue { IndexField = "acl.owner", StringValue = team.Id });
-        request.EndKeys.Add(new IndexKeyValue { IndexField = "isPublic", BoolValue = true });
-        request.EndKeys.Add(new IndexKeyValue { IndexField = "lastModifiedDate.value", StringValue = "" });
+        Assert.AreEqual(2, projects.Count);
 
-        request.Limit = 1;
-
-        var response = await _factory.ProjectService().findKeyRangeAsync(request);
-
-        Assert.AreEqual(1, response.List.Count);
-
-        Assert.AreEqual(projectName2, response.List[0].Project.Name);
-
-        request.Limit = 200;
-
-        response = await _factory.ProjectService().findKeyRangeAsync(request);
-
-        Assert.AreEqual(2, response.List.Count);
-
-        Assert.AreEqual(projectName2, response.List[0].Project.Name);
-        Assert.AreEqual(projectName1, response.List[1].Project.Name);
+        Assert.AreEqual(projectName2, projects[0].Name);
+        Assert.AreEqual(projectName1, projects[1].Name);
 
         await _factory.ProjectService()
-            .deleteAsync(new DeleteRequest { Id = response.List[1].Project.Id, Rev = response.List[1].Project.Rev });
+            .deleteAsync(new DeleteRequest { Id = projects[1].Id, Rev = projects[1].Rev });
 
-        response = await _factory.ProjectService().findKeyRangeAsync(request);
+        projects = await _factory.DocumentService().FindProjectsByOwner(team.Id);
 
-        Assert.AreEqual(1, response.List.Count);
+        Assert.AreEqual(1, projects.Count);
 
-        Assert.AreEqual(projectName2, response.List[0].Project.Name);
+        Assert.AreEqual(projectName2, projects[0].Name);
 
         await _factory.TeamService().deleteAsync(new DeleteRequest { Id = team.Id, Rev = team.Rev });
     }
@@ -226,23 +186,22 @@ public sealed class Test1
         // Create a temporary file
         var tempFilePath = Path.GetTempFileName();
         var fileName = Path.GetFileName(tempFilePath);
-
-        // const string fileContent = "This is a test file content.";
-
+        
+        // file 2MB
         var fileContent = new StringBuilder();
-        for (var i = 0; i < 10000; i++)
+        const int nRows = 1000 * 1000;
+        for (var i = 0; i < nRows; i++)
         {
-            fileContent.AppendLine("This is a test file content.");
+            fileContent.AppendLine("A");
         }
-
-
-        var team = await GetOrCreateTeam(teamName);
+        
+        var team = await _factory.TeamService().GetOrCreateTeam(teamName);
 
         try
         {
             await File.WriteAllTextAsync(tempFilePath, fileContent.ToString());
 
-            const int chunkSize = 1024 * 64; // 64 KB chunks
+            const int chunkSize = 1024 * 1024; // 64 KB chunks
 
             var project = await _factory.ProjectService().createAsync(new EProject()
             {

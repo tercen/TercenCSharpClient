@@ -4,6 +4,8 @@ using Grpc.Core;
 using Grpc.Net.Client;
 using TercenGrpcClient;
 
+namespace TercenGrpcClient.client;
+
 // Custom handler to add authentication token
 public class AuthenticatedHttpClientHandler(string token) : DelegatingHandler
 {
@@ -177,5 +179,10 @@ public class TercenFactory
     public  WorkflowService.WorkflowServiceClient WorkflowService()
     {
         return new WorkflowService.WorkflowServiceClient(_channel);
+    }
+    
+    public  EventService.EventServiceClient EventService()
+    {
+        return new EventService.EventServiceClient(_channel);
     }
 }
