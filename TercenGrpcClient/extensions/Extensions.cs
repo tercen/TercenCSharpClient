@@ -525,6 +525,80 @@ public static class TeamServiceExtension
     }
 }
 
+public static class ProjectDocumentServiceExtension
+{
+    /// <summary>
+    /// Note : root directory has no id, to search at the root of a project set an empty string as folderId.
+    /// </summary>
+    /// <param name="projectDocumentService"></param>
+    /// <param name="projectId"></param>
+    /// <param name="folderId"></param>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    public static async Task<List<EProjectDocument>> FindProjectObjectsByFolderAndName(
+        this ProjectDocumentService.ProjectDocumentServiceClient projectDocumentService,
+        string projectId, 
+        string folderId,
+        string name)
+    {
+        var request = new KeyRangeRequest { Name = "ProjectDocument/findProjectObjectsByFolderAndName" };
+
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "projectId", StringValue = projectId });
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "folderId", StringValue = folderId });
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "name", StringValue = name });
+
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "projectId", StringValue = projectId });
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "folderId", StringValue = folderId });
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "name", StringValue = name });
+
+        request.UseFactory = true;
+        request.Limit = 10000000;
+
+        return (await projectDocumentService.findKeyRangeAsync(request)).List.ToList();
+    }
+    
+    public static async Task<List<EProjectDocument>> FindProjectObjectsByFolder(
+        this ProjectDocumentService.ProjectDocumentServiceClient projectDocumentService,
+        string projectId, 
+        string folderId)
+    {
+        var request = new KeyRangeRequest { Name = "ProjectDocument/findProjectObjectsByFolderAndName" };
+
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "projectId", StringValue = projectId });
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "folderId", StringValue = folderId });
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "name", StringValue = "\ufff0" });
+
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "projectId", StringValue = projectId });
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "folderId", StringValue = folderId });
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "name", StringValue = "" });
+
+        request.UseFactory = true;
+        request.Limit = 10000000;
+
+        return (await projectDocumentService.findKeyRangeAsync(request)).List.ToList();
+    }
+    
+    public static async Task<List<EProjectDocument>> FindProjectObjects(
+        this ProjectDocumentService.ProjectDocumentServiceClient projectDocumentService,
+        string projectId )
+    {
+        var request = new KeyRangeRequest { Name = "ProjectDocument/findProjectObjectsByFolderAndName" };
+
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "projectId", StringValue = projectId });
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "folderId", StringValue = "\ufff0" });
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "name", StringValue = "\ufff0" });
+
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "projectId", StringValue = projectId });
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "folderId", StringValue = "" });
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "name", StringValue = "" });
+
+        request.UseFactory = true;
+        request.Limit = 10000000;
+
+        return (await projectDocumentService.findKeyRangeAsync(request)).List.ToList();
+    }
+}
+
 public static class DocumentServiceExtension
 {
     public static async Task<ProjectDocument?> GetWorkflowTemplate(

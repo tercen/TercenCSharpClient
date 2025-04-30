@@ -261,6 +261,25 @@ public sealed class Test1
             Assert.IsNotNull(resp.Result.Filedocument.Id);
             Assert.IsTrue(resp.Result.Filedocument.Id.Length > 0);
 
+            
+            var projectDocumentList = await _factory.ProjectDocumentService()
+                .FindProjectObjectsByFolderAndName(project.Project.Id, "", fileName);
+
+            Assert.AreEqual(1, projectDocumentList.Count);
+            Assert.IsTrue(projectDocumentList[0].ObjectCase == EProjectDocument.ObjectOneofCase.Filedocument);
+            
+            projectDocumentList = await _factory.ProjectDocumentService()
+                .FindProjectObjectsByFolder(project.Project.Id, "");
+
+            Assert.AreEqual(1, projectDocumentList.Count);
+            Assert.IsTrue(projectDocumentList[0].ObjectCase == EProjectDocument.ObjectOneofCase.Filedocument);
+            
+            projectDocumentList = await _factory.ProjectDocumentService()
+                .FindProjectObjects(project.Project.Id);
+
+            Assert.AreEqual(1, projectDocumentList.Count);
+            Assert.IsTrue(projectDocumentList[0].ObjectCase == EProjectDocument.ObjectOneofCase.Filedocument);
+            
             var reqDownload = new ReqDownload
             {
                 FileDocumentId = resp.Result.Filedocument.Id,
