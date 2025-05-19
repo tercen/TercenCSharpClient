@@ -601,23 +601,20 @@ public static class ProjectDocumentServiceExtension
 
 public static class DocumentServiceExtension
 {
-    public static async Task<ProjectDocument?> GetWorkflowTemplate(
-        this DocumentService.DocumentServiceClient documentService, string templateGitUri, string version)
+    public static async Task<ProjectDocument> GetWorkflowTemplate(
+        this DocumentService.DocumentServiceClient documentService, string templateGitUri, string? version)
     {
-        // var response = await documentService
-        //     .getLibraryAsync(new ReqGetLibrary { DocTypes = { "Workflow" }, TeamIds = { TestLibraryTeamId } });
-
         var response = await documentService
             .getLibraryAsync(new ReqGetLibrary { DocTypes = { "Workflow" } });
-
-        var templates = response.List.Where(doc => doc.Projectdocument != null).Where(doc =>
-                doc.Projectdocument.Url.Uri == templateGitUri &&
-                doc.Projectdocument.Version == version)
+        var allTemplates = response.List.Where(doc => doc.Projectdocument != null)
             .Select(doc => doc.Projectdocument).ToList();
-
-        return templates.FirstOrDefault();
+        var templates = allTemplates.Where(doc =>
+                doc.Url.Uri == templateGitUri &&
+                version == null || doc.Version == version).ToList();
+        if (templates.Count > 1) throw new ApplicationException($"More than one version of workflow template {templateGitUri}, must specify version");
+        if (templates.Count == 0) throw new ApplicationException($"Not found workflow template {templateGitUri} (version {version})");
+        return templates.First();
     }
-
 
     public static async Task<List<Project>> FindProjectsByOwner(
         this DocumentService.DocumentServiceClient documentService, string teamOrUserId)
