@@ -17,9 +17,11 @@ public sealed class TestRunWorkflow
     private string? _gitPat;
     private const string TestRunWorkflowTeamId = "grpc_test_run_workflow_team";
     private const string TestLibraryTeamId = "grpc_test_ibrary_team";
-    private const string TemplateProjectName = "grpc_test_workflow_template@1.0.1";
+  
+    
+    private const string TemplateProjectName = "grpc_test_workflow_template@1.1.0";
     private const string TemplateUri = "https://github.com/tercen/grpc_test_workflow_template";
-    private const string TemplateVersion = "1.0.1";
+    private const string TemplateVersion = "1.1.0";
 
     [TestInitialize]
     public async System.Threading.Tasks.Task SetupAsync()
@@ -92,7 +94,7 @@ public sealed class TestRunWorkflow
 
         var workflow = response.Result.Workflow;
 
-        var fileDocument = new FileDocument
+        var crabsFileDocument = new FileDocument
         {
             Name = "crabs-long.csv",
             ProjectId = myProject.Id,
@@ -102,12 +104,31 @@ public sealed class TestRunWorkflow
             }
         };
 
-        fileDocument = await _factory.FileService().UploadFile(Path.Combine("Resources", "crabs-long.csv"), fileDocument);
+        crabsFileDocument = await _factory.FileService()
+            .UploadFile(Path.Combine("Resources", "crabs.csv"), crabsFileDocument);
 
-        var tableStep = workflow.Steps.First(step => step.Tablestep != null).Tablestep;
+        var crabsTableStep = workflow.Steps.First(step => step.Tablestep is { Name: "crabs.csv" }).Tablestep;
 
-        tableStep.Model.Relation = ERelationExtension.CreateFileDocumentRelation([fileDocument]);
-        tableStep.State.TaskState.Donestate = new DoneState();
+        crabsTableStep.Model.Relation = ERelationExtension.CreateFileDocumentRelation([crabsFileDocument]);
+        crabsTableStep.State.TaskState.Donestate = new DoneState();
+        
+        var genderFileDocument = new FileDocument
+        {
+            Name = "crabs-gender.csv",
+            ProjectId = myProject.Id,
+            Acl = new Acl()
+            {
+                Owner = myProject.Acl.Owner,
+            }
+        };
+
+        genderFileDocument = await _factory.FileService()
+            .UploadFile(Path.Combine("Resources", "crabs-gender.csv"), genderFileDocument);
+
+        var genderTableStep = workflow.Steps.First(step => step.Tablestep is { Name: "crabs-gender.csv" }).Tablestep;
+
+        genderTableStep.Model.Relation = ERelationExtension.CreateFileDocumentRelation([genderFileDocument]);
+        genderTableStep.State.TaskState.Donestate = new DoneState();
 
         await _factory.WorkflowService().updateAsync(new EWorkflow { Workflow = workflow });
 

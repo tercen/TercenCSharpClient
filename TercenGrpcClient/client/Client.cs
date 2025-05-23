@@ -2,6 +2,7 @@ using System.Text.Json;
 using Grpc.Core;
 
 using Grpc.Net.Client;
+using Tercen;
 using TercenGrpcClient;
 
 namespace TercenGrpcClient.client;
@@ -149,8 +150,11 @@ public class TercenFactory
         return new ProjectService.ProjectServiceClient(_channel);
     }
     
+    public PatchRecordService.PatchRecordServiceClient PatchRecordService()
+    {
+        return new PatchRecordService.PatchRecordServiceClient(_channel);
+    }
     
-
     public FileService.FileServiceClient FileService()
     {
         return new FileService.FileServiceClient(_channel);

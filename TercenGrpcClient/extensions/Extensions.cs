@@ -537,7 +537,7 @@ public static class ProjectDocumentServiceExtension
     /// <returns></returns>
     public static async Task<List<EProjectDocument>> FindProjectObjectsByFolderAndName(
         this ProjectDocumentService.ProjectDocumentServiceClient projectDocumentService,
-        string projectId, 
+        string projectId,
         string folderId,
         string name)
     {
@@ -556,10 +556,10 @@ public static class ProjectDocumentServiceExtension
 
         return (await projectDocumentService.findKeyRangeAsync(request)).List.ToList();
     }
-    
+
     public static async Task<List<EProjectDocument>> FindProjectObjectsByFolder(
         this ProjectDocumentService.ProjectDocumentServiceClient projectDocumentService,
-        string projectId, 
+        string projectId,
         string folderId)
     {
         var request = new KeyRangeRequest { Name = "ProjectDocument/findProjectObjectsByFolderAndName" };
@@ -577,10 +577,10 @@ public static class ProjectDocumentServiceExtension
 
         return (await projectDocumentService.findKeyRangeAsync(request)).List.ToList();
     }
-    
+
     public static async Task<List<EProjectDocument>> FindProjectObjects(
         this ProjectDocumentService.ProjectDocumentServiceClient projectDocumentService,
-        string projectId )
+        string projectId)
     {
         var request = new KeyRangeRequest { Name = "ProjectDocument/findProjectObjectsByFolderAndName" };
 
@@ -653,6 +653,99 @@ public static class DocumentServiceExtension
     }
 }
 
+public static class DateTimeExtension {
+    
+    private static string _fourDigits(int n) {
+        var absN = Math.Abs(n);
+        var sign = n < 0 ? "-" : "";
+        if (absN >= 1000) return $"{n}";
+        if (absN >= 100) return $"{sign}0{absN}";
+        if (absN >= 10) return $"{sign}00{absN}";
+        return $"{sign}000{absN}";
+    }
+    
+    private static string _sixDigits(int n) {
+        // Assert.(n < -9999 || n > 9999);
+        var absN = Math.Abs(n);
+        var sign = n < 0 ? "-" : "+";
+        if (absN >= 100000) return $"{sign}{absN}";
+        return $"{sign}0{absN}";
+    }
+
+    private static string _threeDigits(int n) {
+        if (n >= 100) return $"{n}";
+        if (n >= 10) return $"0{n}";
+        return $"00{n}";
+    }
+
+    private static string _twoDigits(int n) {
+        if (n >= 10) return $"{n}";
+        return $"0{n}";
+    }
+
+    public static string ToIso8601String(this DateTime dateTime, bool isUtc)
+    {
+            var y =
+                (dateTime.Year >= -9999 && dateTime.Year <= 9999) ? _fourDigits(dateTime.Year) : _sixDigits(dateTime.Year);
+            var m = _twoDigits(dateTime.Month);
+            var d = _twoDigits(dateTime.Day);
+            var h = _twoDigits(dateTime.Hour);
+            var min = _twoDigits(dateTime.Minute);
+            var sec = _twoDigits(dateTime.Second);
+            var ms = _threeDigits(dateTime.Millisecond);
+            var us = dateTime.Microsecond == 0 ? "" : _threeDigits(dateTime.Microsecond);
+           
+            if (isUtc) {
+                return $"{y}-{m}-{d}T{h}:{min}:{sec}.{ms}{us}Z";
+            } else {
+                return $"{y}-{m}-{d}T{h}:{min}:{sec}.{ms}{us}";
+            }
+        
+    }
+}
+
+public static class EventServiceExtension
+{
+    public static async Task<List<PersistentChannelEvent>> FindPersistentChannelEventByChannelAndDate(
+        this EventService.EventServiceClient eventService, string channel, string startDate, string endDate)
+    {
+        var request = new KeyRangeRequest { Name = "Event/findByChannelAndDate" };
+
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "channel", StringValue = channel });
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "date.value", StringValue =  endDate});
+
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "channel", StringValue = channel });
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "date.value", StringValue = startDate  });
+
+        request.UseFactory = true;
+        request.Limit = 10000;
+
+        return (await eventService.findKeyRangeAsync(request)).List.Select(doc => doc.Persistentchannelevent)
+            .ToList();
+    }
+}
+
+public static class PatchRecordServiceExtension
+{
+    public static async Task<List<PatchRecords>> FindPatchRecordsByChannelIdAndSequence(
+        this PatchRecordService.PatchRecordServiceClient patchRecordsService, string channelId, int startSequence,
+        int endSequence)
+    {
+        var request = new KeyRangeRequest { Name = "PatchRecords/findByChannelIdAndSequence" };
+
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "cI", StringValue = channelId });
+        request.StartKeys.Add(new IndexKeyValue { IndexField = "s", IntValue = startSequence });
+
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "cI", StringValue = channelId });
+        request.EndKeys.Add(new IndexKeyValue { IndexField = "s", IntValue = endSequence });
+
+        request.UseFactory = true;
+
+        return (await patchRecordsService.findKeyRangeAsync(request)).List.Select(doc => doc.Patchrecords)
+            .ToList();
+    }
+}
+
 public static class ETaskExtension
 {
     public static string Id(this ETask task)
@@ -707,6 +800,27 @@ public static class ETaskExtension
 
 public static class EStateExtension
 {
+    public static bool IsFinalState(this EState state)
+    {
+        switch (state.ObjectCase)
+        {
+            case EState.ObjectOneofCase.Donestate:
+            case EState.ObjectOneofCase.Failedstate:
+            case EState.ObjectOneofCase.Canceledstate:
+                return true;
+
+            case EState.ObjectOneofCase.Initstate:
+            case EState.ObjectOneofCase.Pendingstate:
+            case EState.ObjectOneofCase.Runningdependentstate:
+            case EState.ObjectOneofCase.Runningstate:
+            case EState.ObjectOneofCase.State:
+            case EState.ObjectOneofCase.None:
+                return false;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+    }
+
     public static void ThrowIfNotDone(this EState state)
     {
         switch (state.ObjectCase)
@@ -729,6 +843,61 @@ public static class EStateExtension
             default:
                 throw new ArgumentOutOfRangeException();
         }
+    }
+
+    public static bool IsDone(this EState state)
+    {
+        return EState.ObjectOneofCase.Donestate == state.ObjectCase;
+    }
+}
+
+public static class StepExtension
+{
+    public static string Id(this EStep step)
+    {
+        switch (step.ObjectCase)
+        {
+            case EStep.ObjectOneofCase.Crosstabstep:
+                return step.Crosstabstep.Id;
+            case EStep.ObjectOneofCase.Datastep:
+                return step.Datastep.Id;
+            case EStep.ObjectOneofCase.Exportstep:
+                return step.Exportstep.Id;
+            case EStep.ObjectOneofCase.Groupstep:
+                return step.Groupstep.Id;
+            case EStep.ObjectOneofCase.Instep:
+                return step.Instep.Id;
+            case EStep.ObjectOneofCase.Joinstep:
+                return step.Joinstep.Id;
+            case EStep.ObjectOneofCase.Meltstep:
+                return step.Meltstep.Id;
+            case EStep.ObjectOneofCase.Modelstep:
+                return step.Modelstep.Id;
+            case EStep.ObjectOneofCase.Namespacestep:
+                return step.Namespacestep.Id;
+            case EStep.ObjectOneofCase.Outstep:
+                return step.Outstep.Id;
+            case EStep.ObjectOneofCase.Relationstep:
+                return step.Relationstep.Id;
+            case EStep.ObjectOneofCase.Step:
+                return step.Step.Id;
+            case EStep.ObjectOneofCase.Tablestep:
+                return step.Tablestep.Id;
+            case EStep.ObjectOneofCase.Viewstep:
+                return step.Viewstep.Id;
+            case EStep.ObjectOneofCase.Wizardstep:
+                return step.Wizardstep.Id;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+    }
+}
+
+public static class TaskStateEventExtension
+{
+    public static string? StepId(this TaskStateEvent task)
+    {
+        return task.Meta.Where(pair => pair.Key == "step.id").Select(pair => pair.Value).FirstOrDefault();
     }
 }
 
