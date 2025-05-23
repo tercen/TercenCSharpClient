@@ -23,11 +23,7 @@ public sealed class TestPollRunningWorkflow
     private const string TemplateProjectName = "grpc_test_workflow_template@1.1.0";
     private const string TemplateUri = "https://github.com/tercen/grpc_test_workflow_template";
     private const string TemplateVersion = "1.1.0";
-
-
-    // private const string TemplateUri = "https://dev.azure.com/sartorius-lps/lps_ingenix_modules/_git/lps_tercen_phenotyping_template";
-    // private const string TemplateVersion = "1.0.4";
-
+  
     [TestInitialize]
     public async System.Threading.Tasks.Task SetupAsync()
     {
@@ -36,9 +32,7 @@ public sealed class TestPollRunningWorkflow
         _username = Environment.GetEnvironmentVariable("TERCEN_USERNAME");
         _password = Environment.GetEnvironmentVariable("TERCEN_PASSWORD");
         _gitPat = Environment.GetEnvironmentVariable("GIT_TOKEN");
-
-        _gitPat = "DU06EvACYPnqmwoz3JJByw1GiVH71JFCGbH260l49P0m7Q5YTRyvJQQJ99BDACAAAAAoyGEYAAASAZDO3HnH";
-
+        
         if (string.IsNullOrEmpty(_uri))
         {
             _uri = "http://127.0.0.1:50051";
