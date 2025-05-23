@@ -49,6 +49,7 @@ jobs:
         run: dotnet test --no-restore --verbosity normal
         env:
           TERCEN_URI: http://172.42.0.42:50051
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Optional: Publish the project output (e.g., for a gRPC server)
 #      - name: Publish
