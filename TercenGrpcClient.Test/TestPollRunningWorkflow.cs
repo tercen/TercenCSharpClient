@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using Google.Protobuf;
 
 namespace TercenGrpcClient.Test;
@@ -130,10 +131,26 @@ public sealed class TestPollRunningWorkflow
 
         genderTableStep.Model.Relation = ERelationExtension.CreateFileDocumentRelation([genderFileDocument]);
         genderTableStep.State.TaskState.Donestate = new DoneState();
+        var exportDS = workflow.Steps.First(step => step.Datastep is { Name: "Export Table" });
 
+        // set operator property
+        var plotDS = workflow.Steps.First(step => step.Datastep is { Name: "Plot" });
+        var propertyValue = plotDS.Datastep.Model.OperatorSettings.OperatorRef.PropertyValues.First(prop =>
+            prop.Name == "plot.width");
+        propertyValue.Value = "1200";
+        
+        propertyValue = plotDS.Datastep.Model.OperatorSettings.OperatorRef.PropertyValues.First(prop =>
+            prop.Name == "plot.height");
+        propertyValue.Value = "600";
+        
         var revResponse = await _factory.WorkflowService().updateAsync(new EWorkflow { Workflow = workflow });
         workflow.Rev = revResponse.Rev;
 
+        // If stepsToReset and stepsToRun are both empty, all steps will be run.
+        // Reset plot step to make sure the step will be rerun with the plot settings
+        var stepsToReset = new List<string>{ plotDS.Id() };
+        var stepsToRun = new List<string>{ plotDS.Id(), exportDS.Id() };
+        
         var task = await _factory.TaskService().createAsync(new ETask
         {
             Runworkflowtask = new RunWorkflowTask
@@ -146,7 +163,9 @@ public sealed class TestPollRunningWorkflow
                 ProjectId = workflow.ProjectId,
                 WorkflowId = workflow.Id,
                 ChannelId = Guid.NewGuid().ToString(),
-                Meta = { new Pair { Key = "channel.persistent", Value = "true" } }
+                Meta = { new Pair { Key = "channel.persistent", Value = "true" } },
+                StepsToReset = { stepsToReset },
+                StepsToRun = { stepsToRun }
             }
         });
 
@@ -190,6 +209,20 @@ public sealed class TestPollRunningWorkflow
                     ? newStartDate.AddMicroseconds(1)
                     : newStartDate;
             }
+            
+            // Progress events generate by the RunWorkflowTask
+            var progressEvents = events
+                .Where(evt => evt.Event.ObjectCase == EEvent.ObjectOneofCase.Taskprogressevent)
+                .Select(evt => evt.Event.Taskprogressevent)
+                .Where(evt => evt.TaskId == task.Runworkflowtask.Id)
+                .ToList();
+
+            foreach (var evt in progressEvents)
+            {
+                Console.WriteLine(evt);
+            }
+            
+            
 
             // Tasks that have been completed
             var finalTaskStateEvents = events

@@ -611,8 +611,8 @@ public static class DocumentServiceExtension
         var templates = allTemplates.Where(doc =>
                 doc.Url.Uri == templateGitUri &&
                 version == null || doc.Version == version).ToList();
-        if (templates.Count > 1) throw new ApplicationException($"More than one version of workflow template {templateGitUri}, must specify version");
-        if (templates.Count == 0) throw new ApplicationException($"Not found workflow template {templateGitUri} (version {version})");
+        // if (templates.Count > 1) throw new ApplicationException($"More than one version of workflow template {templateGitUri}, must specify version");
+        if (templates.Count < 1) throw new ApplicationException($"Not found workflow template {templateGitUri} (version {version})");
         return templates.First();
     }
 
