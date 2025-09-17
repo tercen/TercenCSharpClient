@@ -85,6 +85,7 @@ public sealed class TestPollRunningWorkflow
     {
         var team = await _factory.TeamService().GetOrCreateTeam(TestRunWorkflowTeamId);
         var myProject = await _factory.GetOrCreateProject("test_project", team.Id);
+        var myFolder = await _factory.FolderService().GetOrCreateFolder(myProject.Id, "myExperiment/myPack");
 
         var workflowTemplate = await _factory.DocumentService().GetWorkflowTemplate(TemplateUri, TemplateVersion);
 
@@ -100,6 +101,7 @@ public sealed class TestPollRunningWorkflow
         {
             Name = "crabs-long.csv",
             ProjectId = myProject.Id,
+            FolderId = myFolder.Id,
             Acl = new Acl()
             {
                 Owner = myProject.Acl.Owner,
@@ -118,6 +120,7 @@ public sealed class TestPollRunningWorkflow
         {
             Name = "crabs-gender.csv",
             ProjectId = myProject.Id,
+            FolderId = myFolder.Id,
             Acl = new Acl()
             {
                 Owner = myProject.Acl.Owner,
@@ -142,8 +145,14 @@ public sealed class TestPollRunningWorkflow
         propertyValue = plotDS.Datastep.Model.OperatorSettings.OperatorRef.PropertyValues.First(prop =>
             prop.Name == "plot.height");
         propertyValue.Value = "600";
+
+
+        // move the workflow in myFolder
+        workflow.FolderId = myFolder.Id;
         
+        // save the workflow modifications
         var revResponse = await _factory.WorkflowService().updateAsync(new EWorkflow { Workflow = workflow });
+        // update revision number
         workflow.Rev = revResponse.Rev;
 
         // If stepsToReset and stepsToRun are both empty, all steps will be run.
@@ -176,12 +185,8 @@ public sealed class TestPollRunningWorkflow
         {
             TaskId = task.Runworkflowtask.Id
         });
-
-        // await _factory.TaskService().waitDoneAsync(new ReqWaitDone
-        // {
-        //     TaskId = task.Runworkflowtask.Id
-        // });
-
+        
+        // start pooling the EventService 
         var isComplete = false;
 
         while (!isComplete)
@@ -222,8 +227,6 @@ public sealed class TestPollRunningWorkflow
                 Console.WriteLine(evt);
             }
             
-            
-
             // Tasks that have been completed
             var finalTaskStateEvents = events
                 .Where(evt => evt.Event.ObjectCase == EEvent.ObjectOneofCase.Taskstateevent)

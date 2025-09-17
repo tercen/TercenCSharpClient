@@ -160,6 +160,11 @@ public class TercenFactory
         return new FileService.FileServiceClient(_channel);
     }
     
+    public FolderService.FolderServiceClient FolderService()
+    {
+        return new FolderService.FolderServiceClient(_channel);
+    }
+    
     public DocumentService.DocumentServiceClient DocumentService()
     {
         return new DocumentService.DocumentServiceClient(_channel);

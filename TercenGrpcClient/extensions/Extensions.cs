@@ -454,6 +454,21 @@ public static class TaskServiceExtension
     }
 }
 
+public static class FolderServiceExtension
+{
+    public static async Task<FolderDocument> GetOrCreateFolder(
+        this FolderService.FolderServiceClient folderService, string projectId, string path)
+    {
+        var resp = await folderService.getOrCreateAsync(new ReqGetOrCreate
+        {
+            ProjectId =  projectId,
+            Path = path
+        });
+
+        return resp.Result.Folderdocument;
+    }
+}
+
 public static class TeamServiceExtension
 {
     public static async Task<Team> GetOrCreateTeam(
