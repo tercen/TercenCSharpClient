@@ -71,51 +71,66 @@ public sealed class TestRunCurlOperator
     }
 
     [TestMethod]
-    public async System.Threading.Tasks.Task TestCurlDownloadsFileOnWorker()
+    public async System.Threading.Tasks.Task TestCurlDownloadsFilesOnWorker()
     {
-        var eventsUrl = Environment.GetEnvironmentVariable("EVENTS_URL");
-        if (string.IsNullOrEmpty(eventsUrl)) eventsUrl = DefaultEventsUrl;
+        // One OR MORE download URLs. EVENTS_URLS is a ';'-separated list — exercises
+        // the batched multi-file path (N manifest rows -> one worker task). Falls
+        // back to EVENTS_URL, then a small public default. Pass real Azure blob SAS
+        // URLs for a faithful run.
+        var urlsEnv = Environment.GetEnvironmentVariable("EVENTS_URLS");
+        var single = Environment.GetEnvironmentVariable("EVENTS_URL");
+        var urls = !string.IsNullOrEmpty(urlsEnv)
+            ? urlsEnv.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : new[] { string.IsNullOrEmpty(single) ? DefaultEventsUrl : single };
 
-        // Optional: only a pre-1.0.3 operator needs an md5. Default: none.
+        // Optional md5 (pre-1.0.3 only), applied to every file. Default: none.
         var eventsMd5 = Environment.GetEnvironmentVariable("EVENTS_MD5_BASE64");
+        var md5 = string.IsNullOrEmpty(eventsMd5) ? null : eventsMd5;
 
         var team = await _factory.TeamService().GetOrCreateTeam(TestTeamId);
         var project = await _factory.GetOrCreateProject("curl_operator_proof", team.Id);
 
-        // Simulate an Ingenix analysis id: the file lands in a top-level folder
-        // named by it (project / <analysisId> / events.zip), matching Ingenix.
-        // Fresh each run so curl actually downloads (it dedups by path).
+        // Ingenix layout: files land in a project-root folder named by the analysis
+        // id. Fresh id each run so curl actually downloads (it dedups by path).
         var analysisId = Guid.NewGuid().ToString();
-        var downloadPath = $"{analysisId}/{DownloadName}";
 
-        // The whole download, through the utility: one worker task, no bytes via main.
-        var downloaded = await _factory.DownloadFiles(
-            project.Id,
-            new[] { new CurlFile(downloadPath, eventsUrl, string.IsNullOrEmpty(eventsMd5) ? null : eventsMd5) });
+        // Name each file like the real inputs; any extras get a generated name.
+        var names = new[] { "events.zip", "gather_step.csv", "markers.csv" };
+        var curlFiles = urls
+            .Select((url, i) => new CurlFile(
+                $"{analysisId}/{(i < names.Length ? names[i] : $"file{i}.dat")}", url, md5))
+            .ToList();
 
-        Assert.AreEqual(1, downloaded.Count);
-        var fileDoc = downloaded[0];
-        Console.WriteLine($"FileDocument: id={fileDoc.Id} name={fileDoc.Name} folderId={fileDoc.FolderId} size={fileDoc.Size}");
+        Console.WriteLine($"Downloading {curlFiles.Count} file(s) in one curl task under folder {analysisId}");
 
-        // Correct name.
-        Assert.AreEqual(DownloadName, fileDoc.Name,
-            "downloaded FileDocument should be named events.zip");
+        // The whole batch: one worker task, no bytes through main.
+        var downloaded = await _factory.DownloadFiles(project.Id, curlFiles);
 
-        // Correct folder: a project-root folder named by the analysis id (Ingenix layout).
+        Assert.AreEqual(curlFiles.Count, downloaded.Count, "one FileDocument per requested file");
+
+        // All files land in the same project-root folder named by the analysis id.
         var folders = (await _factory.ProjectDocumentService().FindProjectObjects(project.Id))
             .Where(d => d.ObjectCase == EProjectDocument.ObjectOneofCase.Folderdocument)
             .Select(d => d.Folderdocument)
             .ToList();
 
-        var folder = folders.FirstOrDefault(f => f.Id == fileDoc.FolderId);
+        var folder = folders.FirstOrDefault(f => f.Name == analysisId);
         Console.WriteLine(folder == null
-            ? "folder NOT found"
+            ? $"folder '{analysisId}' NOT found"
             : $"folder: id={folder.Id} name={folder.Name} parent='{folder.FolderId}'");
 
-        Assert.IsNotNull(folder, "the file should be inside a folder");
-        Assert.AreEqual(analysisId, folder!.Name,
-            "the file should be in a folder named by the analysis id");
-        Assert.IsTrue(folder.FolderId.Length == 0,
-            "the analysis folder should be at the project root (no parent), as Ingenix creates it");
+        Assert.IsNotNull(folder, $"expected a project-root folder named by the analysis id '{analysisId}'");
+        Assert.IsTrue(folder!.FolderId.Length == 0, "the analysis folder should be at the project root");
+
+        // Each requested file came back, in order, with the right name and folder.
+        for (var i = 0; i < curlFiles.Count; i++)
+        {
+            var expectedName = curlFiles[i].Path.Split('/').Last();
+            var fileDoc = downloaded[i];
+            Console.WriteLine($"[{i}] FileDocument: id={fileDoc.Id} name={fileDoc.Name} folderId={fileDoc.FolderId} size={fileDoc.Size}");
+
+            Assert.AreEqual(expectedName, fileDoc.Name, $"file {i} should be named {expectedName}");
+            Assert.AreEqual(folder.Id, fileDoc.FolderId, $"file {i} should be in the analysis folder");
+        }
     }
 }
